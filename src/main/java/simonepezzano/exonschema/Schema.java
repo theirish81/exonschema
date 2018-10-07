@@ -10,22 +10,23 @@ import java.util.List;
  */
 public class Schema extends Property {
 
-    List<String> definitions = new LinkedList<>();
-
-    String type;
-
-    String title;
+    private final String title;
 
     @JsonProperty("$schema")
-    String schema = "http://json-schema.org/draft-07/schema#";
+    private final String schema = "http://json-schema.org/draft-07/schema#";
 
-    public Schema(){
-        super();
-    }
-
-    public Schema(String id, String title){
+    public Schema(String id, String title,String type){
         this.id = id;
         this.title = title;
+        this.type = type;
+    }
+
+    public String getTitle(){
+        return title;
+    }
+
+    public String getSchema(){
+        return schema;
     }
 
 }

@@ -4,8 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 /**
  *
@@ -13,7 +12,9 @@ import java.io.IOException;
 public class ExonUtils {
 
     public static final String getType(Object data){
-        final String name = data.getClass().getSimpleName();
+        final String name = data != null ? data.getClass().getSimpleName() : null;
+        if(name == null)
+            return "null";
         switch(name){
             case "Boolean":
                 return "boolean";
@@ -44,6 +45,17 @@ public class ExonUtils {
         }
     }
 
+    public static boolean isBaseType(String type){
+        switch(type){
+            case "boolean":
+            case "integer":
+            case "number":
+            case "string":
+                return true;
+            default: return false;
+        }
+    }
+
     private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     public static final String serialize(Object object) throws JsonProcessingException {
@@ -56,5 +68,15 @@ public class ExonUtils {
 
     public static final Object deserialize(String json) throws IOException {
         return objectMapper.readValue(json,Object.class);
+    }
+
+    public static final String load(File file) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        while((line = reader.readLine())!= null){
+            sb.append(line+"\n");
+        }
+        return sb.toString();
     }
 }

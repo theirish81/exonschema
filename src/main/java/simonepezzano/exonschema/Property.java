@@ -3,6 +3,7 @@ package simonepezzano.exonschema;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.Sets;
 
 import java.util.*;
 
@@ -10,7 +11,7 @@ import java.util.*;
  *
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Property implements Comparable<Property>{
+public class Property {
 
     @JsonProperty("$id")
     String id;
@@ -19,38 +20,23 @@ public class Property implements Comparable<Property>{
 
     Object defaultValue;
 
-    List<Object> examples;
+    Set<Object> examples;
 
     List<Property> anyOf;
 
+    Set<String> required;
+
     @JsonIgnore
-    transient String _name;
+    transient  Object _value;
 
     public Property(){
-        examples = new LinkedList<>();
-    }
 
-    public Property(String type, Object defaultValue){
-        this(null,type,defaultValue);
     }
 
     public Property(String id, String type, Object defaultValue){
         this.id = id;
         this.type = type;
         this.defaultValue = defaultValue;
-    }
-
-    public void setName(String name){
-        this._name = name;
-    }
-
-    public void setId(String id){
-        this.id = id;
-    }
-
-
-    public int compareTo(Property property){
-        return this.type.equals(property.type) ? 0 : -1;
     }
 
     public void setAnyOf(List<Property> anyOf){
@@ -60,19 +46,24 @@ public class Property implements Comparable<Property>{
     public List<Property> getAnyOf(){
         return anyOf;
     }
-    public String getType(){
-        return type;
-    }
-    public List getExamples(){
+
+    public Set getExamples(){
         return examples;
     }
+
+    public Set<String> getRequired() { return required; }
 
     public Object getDefaultValue(){
         return defaultValue;
     }
 
-    public void setExamples(List<Object> examples){
+    public void setExamples(Set<Object> examples){
         this.examples = examples;
+    }
+    public void addExamples(Set set){
+        if(examples == null)
+            examples = new HashSet<>();
+        examples.addAll(set);
     }
 
     private Map<String,Property> properties;
@@ -87,6 +78,7 @@ public class Property implements Comparable<Property>{
     public void setItems(Property items){
         this.items = items;
     }
+
     public Map<String,Property> getProperties(){
         return properties;
     }
@@ -99,12 +91,18 @@ public class Property implements Comparable<Property>{
         return items;
     }
 
+    public String getType(){
+        return type;
+    }
+
     public boolean equals(Object obj){
         if(obj instanceof Property) {
             Property otherProp = (Property) obj;
-            boolean eq = this.compareTo(otherProp) == 0;
+            if(this.type == null && otherProp.type == null)
+                return true;
+            boolean eq = this.type.equals(otherProp.type);
             if(eq){
-                if(this.getProperties() != null && otherProp.getProperties() != null){
+                if(this.hasProperties() && otherProp.hasProperties()){
                     if(this.getProperties().keySet().equals(otherProp.getProperties().keySet())){
                         Iterator<String> iterator = this.getProperties().keySet().iterator();
                         while(iterator.hasNext()){
@@ -114,10 +112,22 @@ public class Property implements Comparable<Property>{
                         }
                     } else return false;
                 }
+                if(this.getItems() != null && otherProp.getItems() != null){
+                    return this.getItems().equals(otherProp.getItems());
+                }
                 return true;
             }
         }
         return false;
+    }
+
+    public void intersectRequires(Set<String> required){
+        if(this.required != null && required != null)
+            this.required = Sets.intersection(this.required,required);
+    }
+
+    public boolean hasProperties(){
+        return properties != null && properties.size() > 0;
     }
 
 }
