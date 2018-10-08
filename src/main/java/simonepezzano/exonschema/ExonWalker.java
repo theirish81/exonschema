@@ -10,10 +10,10 @@ import java.util.stream.Collectors;
  */
 public class ExonWalker {
 
-    Schema schema;
-    Object data;
+    final Schema schema;
+    final Object data;
 
-    LinkedList<String> depthStack;
+    final LinkedList<String> depthStack;
 
     public ExonWalker(Object data, String id,String title){
         this.data = data;
@@ -35,7 +35,7 @@ public class ExonWalker {
                     Map.Entry<String, Object> it = iterator.next();
                     depthStack.addLast("/properties/"+it.getKey());
                     final String localType = ExonUtils.getType(it.getValue());
-                    Property prop = new Property(stackToString(depthStack), localType, ExonUtils.getDefault(localType));
+                    final Property prop = new Property(stackToString(depthStack), localType, ExonUtils.getDefault(localType));
                     prop._value = it.getValue();
                     analyze(it.getValue(), prop);
                     currentElement.addChildProperty(it.getKey(), prop);
@@ -48,21 +48,25 @@ public class ExonWalker {
                 Iterator iterator = ((List)item).iterator();
                 int cnt = 0;
                 while(iterator.hasNext()){
-                    Object localItem = iterator.next();
+                    final Object localItem = iterator.next();
                     final String localType = ExonUtils.getType(localItem);
                     depthStack.addLast("/items_"+cnt);
-                    Property prop = new Property(stackToString(depthStack),localType,ExonUtils.getDefault(localType));
+                    final Property prop = new Property(stackToString(depthStack),localType,ExonUtils.getDefault(localType));
                     prop._value = localItem;
                     analyze(localItem,prop);
                     collectedItems.add(prop);
                     depthStack.removeLast();
                     cnt++;
                 }
+                // Empty array
+                if(collectedItems.size()==0)
+                    return currentElement;
+
                 List<Property> cont = detectDifferentProps(collectedItems);
                 if(cont.size()==1){
                     currentElement.setItems(cont.get(0));
                 } else{
-                    Property anyOf = new Property();
+                    final Property anyOf = new Property();
                     anyOf.setAnyOf(cont);
                     currentElement.setItems(anyOf);
                 }
@@ -82,14 +86,14 @@ public class ExonWalker {
         types.add(props.get(0));
         Iterator<Property> iterator1 = props.iterator();
         while(iterator1.hasNext()){
-            Property currentItem = iterator1.next();
+            final Property currentItem = iterator1.next();
             Iterator<Property> iterator2 = types.iterator();
             boolean compareSuccess = false;
             while(iterator2.hasNext()){
-                Property savedItem = iterator2.next();
+                final Property savedItem = iterator2.next();
                 if(currentItem.equals(savedItem)) {
                     compareSuccess = true;
-                    if(ExonUtils.isBaseType(currentItem.type))
+                    if(currentItem.isSingleType() && ExonUtils.isBaseType(currentItem.getTypeAsString()))
                         savedItem.addExamples(currentItem.examples);
                     else
                         savedItem.intersectRequires(currentItem.required);

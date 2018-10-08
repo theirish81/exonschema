@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import java.io.*;
+import java.util.*;
 
 /**
  *
@@ -45,15 +46,35 @@ public class ExonUtils {
         }
     }
 
-    public static boolean isBaseType(String type){
-        switch(type){
-            case "boolean":
-            case "integer":
-            case "number":
-            case "string":
-                return true;
-            default: return false;
+    public static boolean isBaseType(Object type){
+        // Null is a base type
+        if(type == null)
+            return true;
+        Set<String> types = new HashSet<>();
+        //If the proposed type is a string
+        if(type instanceof String)
+            types.add(type.toString());
+        else
+            //If the proposed type is a collection of types
+            types = (Set<String>) type;
+
+        Iterator<String> iterator = types.iterator();
+        while(iterator.hasNext()) {
+            String t = iterator.next();
+            switch (t) {
+                // If it's a base type, we accept the base case, true
+                case "boolean":
+                case "integer":
+                case "number":
+                case "string":
+                case "null":
+                    break;
+                default:
+                    // In any other case, we immediately return false
+                    return false;
+            }
         }
+        return true;
     }
 
     private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
