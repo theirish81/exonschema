@@ -134,7 +134,7 @@ public class Property {
          * When the current type is null and the incoming type isn't, they are certainly different.
          * We probably ended up comparing an anyOf and another property.
          */
-        if(this.type == null || type != null)
+        if(this.type == null && type != null)
             return false;
 
         // Both single types, straight comparison
@@ -213,6 +213,10 @@ public class Property {
             return getProperties().keySet();
         else
             return new HashSet<>();
+    }
+
+    public int hashCode(){
+        return id.hashCode();
     }
 
 }

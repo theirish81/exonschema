@@ -21,7 +21,7 @@ public class ExonSimplifier {
         if(property.hasItems() && property.getItems().anyOf != null) {
             Iterator<Property> iterator = property.getItems().anyOf.iterator();
             List<Property> toRemove = new LinkedList<>();
-            List<Property> toAdd = new LinkedList<>();
+            HashSet<Property> toAdd = new HashSet<>();
             Property currentProp = iterator.next();
             while(iterator.hasNext()){
                 Property prop2 = iterator.next();
@@ -34,7 +34,7 @@ public class ExonSimplifier {
             }
             property.getItems().anyOf.removeAll(toRemove);
             if(toAdd.size()==1 && property.getItems().anyOf.size()==0) {
-                property.setItems(toAdd.get(0));
+                property.setItems(toAdd.iterator().next());
             }
             else
                 property.getItems().anyOf.addAll(toAdd);

@@ -25,6 +25,10 @@ public class ExonWalker {
         analyze(data,schema);
     }
 
+    public Schema getSchema(){
+        return schema;
+    }
+
     protected Property analyze(Object item,Property currentElement){
         final String type = ExonUtils.getType(item);
         switch(type){
