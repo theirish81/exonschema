@@ -30,7 +30,7 @@ public class Property {
     transient  Object _value;
 
     public Property(){
-
+        id = UUID.randomUUID().toString();
     }
 
     public Property(String id, Object type, Object defaultValue){
@@ -215,8 +215,18 @@ public class Property {
             return new HashSet<>();
     }
 
+    public void setProperties(Map<String,Property> properties){
+        this.properties = properties;
+    }
+
     public int hashCode(){
         return id.hashCode();
+    }
+
+    public Schema asSchema(String title){
+        Schema schema = new Schema(id,title,getTypeAsString());
+        schema.setProperties(properties);
+        return schema;
     }
 
 }
