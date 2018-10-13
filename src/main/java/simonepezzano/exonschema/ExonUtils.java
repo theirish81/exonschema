@@ -3,6 +3,7 @@ package simonepezzano.exonschema;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.collect.Sets;
 
 import java.io.*;
 import java.util.*;
@@ -126,14 +127,19 @@ public class ExonUtils {
         return types;
     }
 
-    public static Property merge(Property prop1, Property prop2){
+    public static Property merge(Property prop1, Property prop2,int similarityRate){
         Property property = new Property(prop1.id,prop1.type,prop1.defaultValue);
         Iterator<String> iterator = prop1.getPropertiesKeys().iterator();
+        Set<String> removeFromRequired = new HashSet<>();
         while(iterator.hasNext()){
             String key = iterator.next();
             Property child1 = prop1.getProperties().get(key);
             Property child2 = prop2.getProperties().get(key);
             // If the two children are basically the same. We pick one.
+            if(child2 == null){
+                property.addChildProperty(key,child1);
+                removeFromRequired.add(key);
+            } else
             if(child1.equals(child2))
                 property.addChildProperty(key,child1);
             else {
@@ -154,8 +160,14 @@ public class ExonUtils {
             }
         }
         // Composing the required field
-        property.required = property.getPropertiesKeys();
+        property.required = Sets.newHashSet(property.getPropertiesKeys());
+        property.required.removeAll(removeFromRequired);
         return property;
+    }
+
+    public static boolean haveSimilarProps(Property property1, Property property2,int similarityRate){
+        Set<String> props = Sets.intersection(property1.getPropertiesKeys(),property2.getPropertiesKeys());
+        return props.size()>property1.getPropertiesKeys().size()/similarityRate && props.size()>property2.getPropertiesKeys().size()/similarityRate;
     }
 
 }

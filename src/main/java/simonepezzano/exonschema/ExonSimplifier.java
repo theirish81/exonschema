@@ -1,6 +1,9 @@
 package simonepezzano.exonschema;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
@@ -9,8 +12,15 @@ public class ExonSimplifier {
 
     Schema schema;
 
+    private int similarityRate;
+
     public ExonSimplifier(Schema schema){
+        this(schema,3);
+    }
+
+    public ExonSimplifier(Schema schema,int similarityRate){
         this.schema = schema;
+        this.similarityRate = similarityRate;
     }
 
     public void analyze(){
@@ -25,10 +35,10 @@ public class ExonSimplifier {
             Property currentProp = iterator.next();
             while(iterator.hasNext()){
                 Property prop2 = iterator.next();
-                if(currentProp.hasProperties() && prop2.hasProperties() && currentProp.getPropertiesKeys().equals(prop2.getPropertiesKeys())){
+                if(currentProp.hasProperties() && prop2.hasProperties() && ExonUtils.haveSimilarProps(currentProp,prop2,similarityRate) /*&& currentProp.getPropertiesKeys().equals(prop2.getPropertiesKeys())*/){
                     toRemove.add(currentProp);
                     toRemove.add(prop2);
-                    currentProp = ExonUtils.merge(currentProp,prop2);
+                    currentProp = ExonUtils.merge(currentProp,prop2,similarityRate);
                     toAdd.add(currentProp);
                 }
             }
