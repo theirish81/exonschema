@@ -32,6 +32,9 @@ public class ExonWalker {
 
     private LinkedList<String> depthStack;
 
+    /**
+     * Default constructor
+     */
     public ExonWalker(){
         super();
     }
@@ -164,11 +167,21 @@ public class ExonWalker {
         return types;
     }
 
-    public static Set<String> getRequired(Map<String,Object> values){
+    /**
+     * Given a data object, collect all the keys to be used as a "required" field
+     * @param values the data object
+     * @return the keys
+     */
+    protected static Set<String> getRequired(Map<String,Object> values){
         return values.entrySet().stream().filter( item -> item.getValue() != null ).map( item -> item.getKey()).collect(Collectors.toSet());
     }
 
-    public static String stackToString(LinkedList<String> depthStack){
+    /**
+     * Transform a depthStack list to a string to be used as a property ID
+     * @param depthStack a depthStack list
+     * @return the generated ID
+     */
+    protected static String stackToString(LinkedList<String> depthStack){
         StringBuilder sb = new StringBuilder();
         sb.append("#");
         Iterator<String> iterator = depthStack.iterator();

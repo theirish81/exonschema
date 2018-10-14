@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- *
+ * Utility functions
  */
 public class ExonUtils {
 
@@ -51,6 +51,8 @@ public class ExonUtils {
     public static final String JAVA_TYPE_INTEGER = "Integer";
     public static final String JAVA_TYPE_ARRAY = "ArrayList";
     public static final String JAVA_TYPE_OBJECT = "LinkedHashMap";
+
+    private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     /**
      * The base, unstructured data types
@@ -127,8 +129,6 @@ public class ExonUtils {
         }
         return true;
     }
-
-    private static final ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     /**
      * Given a POJO, it returns its JSON stringified version
@@ -217,7 +217,13 @@ public class ExonUtils {
         return types;
     }
 
-    public static Property merge(Property prop1, Property prop2,int similarityRate){
+    /**
+     * Merges two properties
+     * @param prop1 property to merge
+     * @param prop2 property to merge
+     * @return the merged property
+     */
+    public static Property merge(Property prop1, Property prop2){
         // Create a new property that will hold the merged content
         final Property property = new Property(prop1.getId(),prop1.getType(),prop1.getDefaultValue());
         // Collect all the keys from both properties

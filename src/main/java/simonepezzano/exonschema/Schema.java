@@ -33,19 +33,45 @@ public class Schema extends Property {
 
     private String title;
 
+    /**
+     * We ideally always conform to draft-07
+     */
     @JsonProperty("$schema")
     private final String schema = "http://json-schema.org/draft-07/schema#";
 
+    /**
+     * Base constructor. Mostly used by deserializers
+     */
     public Schema(){
         super();
     }
 
+    /**
+     * Creates a schema from a JSON string
+     * @param schemaString a JSON string representing a JsonSchema
+     * @return a Schema
+     * @throws IOException
+     */
     public static Schema create(String schemaString) throws IOException {
         return ExonUtils.deserializeSchema(schemaString);
     }
+
+    /**
+     * Creates a schema froma JSON file
+     * @param schema a file containing JSON representing a JsonSchema
+     * @return a Schema
+     * @throws IOException
+     */
     public static Schema create(File schema) throws IOException {
         return ExonUtils.deserializeSchema(schema);
     }
+
+    /**
+     * Default constructor
+     * @param id the id of the schema
+     * @param title the title of the schema
+     * @param type the type of the root object
+     */
     public Schema(String id, String title,String type){
         this.setId(id);
         this.title = title;

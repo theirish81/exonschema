@@ -54,10 +54,20 @@ public class Property {
     @JsonIgnore
     transient  Object _value;
 
+    /**
+     * Base constructor. It initializes the ID as the hashCode method relies on it.
+     * Mostly used by deserializers
+     */
     public Property(){
         id = UUID.randomUUID().toString();
     }
 
+    /**
+     * Default constructor
+     * @param id the ID of the property
+     * @param type the type of the object
+     * @param defaultValue its default value
+     */
     public Property(String id, Object type, Object defaultValue){
         this.id = id;
         this.type = type;
@@ -67,6 +77,7 @@ public class Property {
     public void setId(String id){
         this.id = id;
     }
+
     public String getId(){
         return id;
     }
@@ -104,6 +115,7 @@ public class Property {
     public void setRequired(Set<String> required){
         this.required = required;
     }
+
     public Set<String> getRequired() { return required; }
 
     public Object getDefaultValue(){
