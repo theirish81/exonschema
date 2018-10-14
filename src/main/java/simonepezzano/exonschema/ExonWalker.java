@@ -1,45 +1,78 @@
-package simonepezzano.exonschema;
+/*
+ * @author 2018 Simone Pezzano
+ * ---
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
-import com.google.common.collect.Sets;
+package simonepezzano.exonschema;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Will generate a simple JsonSchema based on a sample data structure. The produced schema is quite simple
+ * and branches in different scenarios for each difference found in non-homogeneous arrays
  */
 public class ExonWalker {
 
-    final Schema schema;
-    final Object data;
+    private LinkedList<String> depthStack;
 
-    final LinkedList<String> depthStack;
+    public ExonWalker(){
+        super();
+    }
 
-    public ExonWalker(Object data, String id,String title){
-        this.data = data;
-        schema = new Schema(id,title,ExonUtils.getType(data));
+    /**
+     * Analyzes a piece of data to generate a JSON schema
+     * @param data a piece of data (maps and arrays)
+     * @param id the ID to assign to the JSON schema
+     * @param title the title of the schema
+     * @return the generated JSON schema
+     */
+    public Schema analyze(Object data, String id, String title){
+
         depthStack = new LinkedList<>();
-    }
 
-    public void analyze(){
+        Schema schema = new Schema(id,title,ExonUtils.determineType(data));
+
         analyze(data,schema);
-    }
-
-    public Schema getSchema(){
         return schema;
     }
 
+    /**
+     * Recursive method to bring the analysis in depth
+     * @param item the item of data being analyzed
+     * @param currentElement the current element that will hold the analysis result
+     * @return the analyzed property
+     */
     protected Property analyze(Object item,Property currentElement){
-        final String type = ExonUtils.getType(item);
+        final String type = ExonUtils.determineType(item);
         switch(type){
-            case "object": {
-                currentElement.required = getRequired((Map<String,Object>)item);
+            /*
+             * If it's an object, walk its entries and make them child properties
+             */
+            case ExonUtils.SCHEMA_TYPE_OBJECT: {
+                currentElement.setRequired(getRequired((Map<String,Object>)item));
                 Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) item).entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<String, Object> it = iterator.next();
                     depthStack.addLast("/properties/"+it.getKey());
-                    final String localType = ExonUtils.getType(it.getValue());
-                    final Property prop = new Property(stackToString(depthStack), localType, ExonUtils.getDefault(localType));
+                    final String localType = ExonUtils.determineType(it.getValue());
+                    final Property prop = new Property(stackToString(depthStack), localType, ExonUtils.determineDefault(localType));
                     prop._value = it.getValue();
                     analyze(it.getValue(), prop);
                     currentElement.addChildProperty(it.getKey(), prop);
@@ -47,15 +80,19 @@ public class ExonWalker {
                 }
                 return currentElement;
             }
-            case "array": {
+            /*
+             * If it's an array, walk down its items and make them properties for the "items" property
+             */
+            case ExonUtils.SCHEMA_TYPE_ARRAY: {
                 List<Property> collectedItems = new LinkedList<>();
                 Iterator iterator = ((List)item).iterator();
                 int cnt = 0;
+                // First, catalog all items a unique property
                 while(iterator.hasNext()){
                     final Object localItem = iterator.next();
-                    final String localType = ExonUtils.getType(localItem);
+                    final String localType = ExonUtils.determineType(localItem);
                     depthStack.addLast("/items_"+cnt);
-                    final Property prop = new Property(stackToString(depthStack),localType,ExonUtils.getDefault(localType));
+                    final Property prop = new Property(stackToString(depthStack),localType,ExonUtils.determineDefault(localType));
                     prop._value = localItem;
                     analyze(localItem,prop);
                     collectedItems.add(prop);
@@ -65,17 +102,23 @@ public class ExonWalker {
                 // Empty array
                 if(collectedItems.size()==0)
                     return currentElement;
-
+                // Identify which properties are equivalent
                 List<Property> cont = detectDifferentProps(collectedItems);
-                if(cont.size()==1){
+
+                // If only one scenario arises, set it as the "items" property
+                if(cont.size()==1)
                     currentElement.setItems(cont.get(0));
-                } else{
+                else{
+                    // If multiple scenario arise, we add them to the "anyOf" property
                     final Property anyOf = new Property();
                     anyOf.setAnyOf(cont);
                     currentElement.setItems(anyOf);
                 }
                 return currentElement;
             }
+            /*
+             * Anything else is a base data time
+             */
             default: {
                 Set<Object> examples = new HashSet<>();
                 examples.add(item);
@@ -85,9 +128,18 @@ public class ExonWalker {
         }
     }
 
+    /**
+     * Give a list of properties, detect which ones are equivalent
+     * @param props a list of properties
+     * @return a list of the essential properties
+     */
     public static List<Property> detectDifferentProps(List<Property> props){
         List<Property> types = new LinkedList<>();
         types.add(props.get(0));
+        /*
+         * For each item of the props, if the current prop is not equivalent to a prop
+         * previously collected, add it to the collected props
+         */
         Iterator<Property> iterator1 = props.iterator();
         while(iterator1.hasNext()){
             final Property currentItem = iterator1.next();
@@ -95,14 +147,17 @@ public class ExonWalker {
             boolean compareSuccess = false;
             while(iterator2.hasNext()){
                 final Property savedItem = iterator2.next();
-                if(currentItem.equals(savedItem)) {
+                if(currentItem.equivalentTo(savedItem)) {
                     compareSuccess = true;
-                    if(currentItem.isSingleType() && ExonUtils.isBaseType(currentItem.getTypeAsString()))
-                        savedItem.addExamples(currentItem.examples);
+                    // if it's a base type
+                    if(ExonUtils.isBaseType(currentItem.getType()))
+                        // add the examples to the collected ones
+                        savedItem.addExamples(currentItem.getExamples());
                     else
-                        savedItem.intersectRequires(currentItem.required);
+                        // otherwise find which requirements are shared
+                        savedItem.intersectRequires(currentItem.getRequired());
                 }
-            }
+            } // if no similar item
             if(!compareSuccess)
                 types.add(currentItem);
         }

@@ -1,3 +1,24 @@
+/*
+ * @author 2018 Simone Pezzano
+ * ---
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package simonepezzano.exonschema;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -8,23 +29,27 @@ import com.google.common.collect.Sets;
 import java.util.*;
 
 /**
- *
+ * The JsonSchema property
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Property {
 
     @JsonProperty("$id")
-    String id;
+    private String id;
 
-    Object type;
+    private Object type;
 
-    Object defaultValue;
+    private Object defaultValue;
 
-    Set<Object> examples;
+    private Set<Object> examples;
 
-    List<Property> anyOf;
+    private List<Property> anyOf;
 
-    Set<String> required;
+    private Set<String> required;
+
+    private Map<String,Property> properties;
+
+    private Property items;
 
     @JsonIgnore
     transient  Object _value;
@@ -39,6 +64,13 @@ public class Property {
         this.defaultValue = defaultValue;
     }
 
+    public void setId(String id){
+        this.id = id;
+    }
+    public String getId(){
+        return id;
+    }
+
     public void setAnyOf(List<Property> anyOf){
         this.anyOf = anyOf;
     }
@@ -47,14 +79,12 @@ public class Property {
         return anyOf;
     }
 
-    public Set getExamples(){
-        return examples;
+    public boolean hasAnyOf(){
+        return anyOf != null;
     }
 
-    public Set<String> getRequired() { return required; }
-
-    public Object getDefaultValue(){
-        return defaultValue;
+    public Set getExamples(){
+        return examples;
     }
 
     public void setExamples(Set<Object> examples){
@@ -71,34 +101,87 @@ public class Property {
         examples.addAll(set);
     }
 
-    private Map<String,Property> properties;
+    public void setRequired(Set<String> required){
+        this.required = required;
+    }
+    public Set<String> getRequired() { return required; }
 
-    private Property items;
+    public Object getDefaultValue(){
+        return defaultValue;
+    }
 
+    /**
+     * Inits the properties map if necessary, and returns it
+     * @return the properties map
+     */
     private Map<String,Property> initAndGetProperties(){
         if(properties == null)
             properties = new HashMap<>();
         return getProperties();
-    }
-    public void setItems(Property items){
-        this.items = items;
     }
 
     public Map<String,Property> getProperties(){
         return properties;
     }
 
+    public void setProperties(Map<String,Property> properties){
+        this.properties = properties;
+    }
+
+    /**
+     * @return the keys of all child properties
+     */
+    @JsonIgnore
+    public Set<String> getPropertiesKeys(){
+        if(hasProperties())
+            return getProperties().keySet();
+        else
+            return new HashSet<>();
+    }
+
+    public Property getProperty(String key){
+        return getProperties().get(key);
+    }
+
+    /**
+     * @return true if the properties map is not null and has items in it
+     */
+    public boolean hasProperties(){
+        return properties != null && properties.size() > 0;
+    }
+
+    /**
+     * Adds a child property
+     * @param key the key of the property
+     * @param property the property
+     */
     public void addChildProperty(String key, Property property) {
         initAndGetProperties().put(key, property);
+    }
+
+    public void setItems(Property items){
+        this.items = items;
     }
 
     public Property getItems(){
         return items;
     }
 
+    /**
+     * @return True if the items object is not null
+     */
+    public boolean hasItems(){
+        return items != null;
+    }
+
+    public void setType(Object type) {
+        this.type = type;
+    }
+
     public Object getType(){
         return type;
     }
+
 
     /**
      * @return true if the type is actually a single string
@@ -150,11 +233,11 @@ public class Property {
     }
 
     /**
-     * The crazy, crazy equals method. This method does not really represent equality, but a sufficient similarity
+     * The crazy, crazy equivalentTo method. This method does not really represent equality, but a sufficient similarity
      * @param obj the object to compare to
      * @return true if the two objects are similar
      */
-    public boolean equals(Object obj){
+    public boolean equivalentTo(Object obj){
         if(obj instanceof Property) {
             Property otherProp = (Property) obj;
 
@@ -176,7 +259,7 @@ public class Property {
                              * If the child property from the current object and the proposed object are
                              * not similar, then we can pretty much accept the two objects are not similar
                              */
-                            if(!this.getProperties().get(key).equals(otherProp.getProperties().get(key)))
+                            if(!this.getProperty(key).equivalentTo(otherProp.getProperty(key)))
                                 return false;
                         }
                         // If the child properties names are not the same
@@ -185,7 +268,7 @@ public class Property {
                 // If the current object and the proposed object have the "items" field
                 if(this.hasItems() && otherProp.hasItems()){
                     // ... we verify whether the "items" fields are similar
-                    return this.getItems().equals(otherProp.getItems());
+                    return this.getItems().equivalentTo(otherProp.getItems());
                 }
                 // If the types are equal, but any other scenario does not trigger, we assume they are similar
                 return true;
@@ -195,28 +278,13 @@ public class Property {
         return false;
     }
 
+    /**
+     * Finds common items between this object's "required" set, and the proposed set of required keys
+     * @param required a set of strings
+     */
     public void intersectRequires(Set<String> required){
         if(this.required != null && required != null)
             this.required = Sets.intersection(this.required,required);
-    }
-
-    public boolean hasProperties(){
-        return properties != null && properties.size() > 0;
-    }
-    public boolean hasItems(){
-        return items != null;
-    }
-
-    @JsonIgnore
-    public Set<String> getPropertiesKeys(){
-        if(hasProperties())
-            return getProperties().keySet();
-        else
-            return new HashSet<>();
-    }
-
-    public void setProperties(Map<String,Property> properties){
-        this.properties = properties;
     }
 
     public int hashCode(){
