@@ -38,7 +38,7 @@ public class ExonSimplifier {
      * scenarios are pretty much compatible, 2 means that at least half of the properties need to be the same,
      * 3 means 1/3 etc.
      */
-    private int similarityRate;
+    private final int similarityRate;
 
     /**
      * Default constructor
@@ -110,13 +110,9 @@ public class ExonSimplifier {
           // If this had no anyOf, it means this property has, at best, regular child properties
         } else{
             // If it has regular properties
-            if(property.hasProperties()) {
+            if(property.hasProperties())
                 // We can dig into them in a recursive fashion
-                Iterator<Property> iterator = property.getProperties().values().iterator();
-                while (iterator.hasNext()) {
-                    analyzeProperty(iterator.next());
-                }
-            }
+                property.getProperties().values().forEach(this::analyzeProperty);
         }
 
     }

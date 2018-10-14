@@ -21,6 +21,9 @@
 
 package simonepezzano.exonschema;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,7 +65,7 @@ public class ExonWalker {
      * @param currentElement the current element that will hold the analysis result
      * @return the analyzed property
      */
-    protected Property analyze(Object item,Property currentElement){
+    protected void analyze(Object item,Property currentElement){
         final String type = ExonUtils.determineType(item);
         switch(type){
             /*
@@ -70,33 +73,28 @@ public class ExonWalker {
              */
             case ExonUtils.SCHEMA_TYPE_OBJECT: {
                 currentElement.setRequired(getRequired((Map<String,Object>)item));
-                Iterator<Map.Entry<String, Object>> iterator = ((Map<String, Object>) item).entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry<String, Object> it = iterator.next();
+                for (final Map.Entry<String,Object> it : ((Map<String, Object>)item).entrySet()) {
                     depthStack.addLast("/properties/"+it.getKey());
                     final String localType = ExonUtils.determineType(it.getValue());
                     final Property prop = new Property(stackToString(depthStack), localType, ExonUtils.determineDefault(localType));
-                    prop._value = it.getValue();
                     analyze(it.getValue(), prop);
                     currentElement.addChildProperty(it.getKey(), prop);
                     depthStack.removeLast();
                 }
-                return currentElement;
+                break;
             }
             /*
              * If it's an array, walk down its items and make them properties for the "items" property
              */
             case ExonUtils.SCHEMA_TYPE_ARRAY: {
                 List<Property> collectedItems = new LinkedList<>();
-                Iterator iterator = ((List)item).iterator();
                 int cnt = 0;
+
                 // First, catalog all items a unique property
-                while(iterator.hasNext()){
-                    final Object localItem = iterator.next();
+                for(final Object localItem : (List)item){
                     final String localType = ExonUtils.determineType(localItem);
                     depthStack.addLast("/items_"+cnt);
                     final Property prop = new Property(stackToString(depthStack),localType,ExonUtils.determineDefault(localType));
-                    prop._value = localItem;
                     analyze(localItem,prop);
                     collectedItems.add(prop);
                     depthStack.removeLast();
@@ -104,7 +102,7 @@ public class ExonWalker {
                 }
                 // Empty array
                 if(collectedItems.size()==0)
-                    return currentElement;
+                    return;
                 // Identify which properties are equivalent
                 List<Property> cont = detectDifferentProps(collectedItems);
 
@@ -114,20 +112,17 @@ public class ExonWalker {
                 else{
                     // If multiple scenario arise, we add them to the "anyOf" property
                     final Property anyOf = new Property();
+                    anyOf.setId(stackToString(depthStack)+"/anyOf");
                     anyOf.setAnyOf(cont);
                     currentElement.setItems(anyOf);
                 }
-                return currentElement;
+                break;
             }
             /*
              * Anything else is a base data time
              */
-            default: {
-                Set<Object> examples = new HashSet<>();
-                examples.add(item);
-                currentElement.setExamples(examples);
-                return currentElement;
-            }
+            default:
+                currentElement.setExamples(Sets.newHashSet(item));
         }
     }
 
@@ -137,19 +132,14 @@ public class ExonWalker {
      * @return a list of the essential properties
      */
     public static List<Property> detectDifferentProps(List<Property> props){
-        List<Property> types = new LinkedList<>();
-        types.add(props.get(0));
+        List<Property> propertyTypes = Lists.newArrayList(props.get(0));
         /*
          * For each item of the props, if the current prop is not equivalent to a prop
          * previously collected, add it to the collected props
          */
-        Iterator<Property> iterator1 = props.iterator();
-        while(iterator1.hasNext()){
-            final Property currentItem = iterator1.next();
-            Iterator<Property> iterator2 = types.iterator();
+        for(final Property currentItem : props){
             boolean compareSuccess = false;
-            while(iterator2.hasNext()){
-                final Property savedItem = iterator2.next();
+            for(Property savedItem : propertyTypes){
                 if(currentItem.equivalentTo(savedItem)) {
                     compareSuccess = true;
                     // if it's a base type
@@ -162,9 +152,9 @@ public class ExonWalker {
                 }
             } // if no similar item
             if(!compareSuccess)
-                types.add(currentItem);
+                propertyTypes.add(currentItem);
         }
-        return types;
+        return propertyTypes;
     }
 
     /**
@@ -173,7 +163,7 @@ public class ExonWalker {
      * @return the keys
      */
     protected static Set<String> getRequired(Map<String,Object> values){
-        return values.entrySet().stream().filter( item -> item.getValue() != null ).map( item -> item.getKey()).collect(Collectors.toSet());
+        return values.entrySet().stream().filter( item -> item.getValue() != null ).map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
     /**
@@ -184,10 +174,10 @@ public class ExonWalker {
     protected static String stackToString(LinkedList<String> depthStack){
         StringBuilder sb = new StringBuilder();
         sb.append("#");
-        Iterator<String> iterator = depthStack.iterator();
-        while(iterator.hasNext()){
-            sb.append(iterator.next());
-        }
+
+        //while(iterator.hasNext()){
+        depthStack.forEach(sb::append);
+
         return sb.toString();
     }
 }

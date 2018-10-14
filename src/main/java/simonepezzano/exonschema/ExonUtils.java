@@ -49,6 +49,7 @@ public class ExonUtils {
     public static final String JAVA_TYPE_FLOAT = "Float";
     public static final String JAVA_TYPE_DOUBLE = "Double";
     public static final String JAVA_TYPE_INTEGER = "Integer";
+    public static final String JAVA_TYPE_LONG = "Long";
     public static final String JAVA_TYPE_ARRAY = "ArrayList";
     public static final String JAVA_TYPE_OBJECT = "LinkedHashMap";
 
@@ -70,6 +71,7 @@ public class ExonUtils {
                                                                                                                 .put(JAVA_TYPE_FLOAT,SCHEMA_TYPE_NUMBER)
                                                                                                                 .put(JAVA_TYPE_DOUBLE,SCHEMA_TYPE_NUMBER)
                                                                                                                 .put(JAVA_TYPE_INTEGER,SCHEMA_TYPE_INTEGER)
+                                                                                                                .put(JAVA_TYPE_LONG,SCHEMA_TYPE_INTEGER)
                                                                                                                 .put(JAVA_TYPE_ARRAY,SCHEMA_TYPE_ARRAY)
                                                                                                                 .put(JAVA_TYPE_OBJECT,SCHEMA_TYPE_OBJECT).build();
     /**
@@ -85,7 +87,7 @@ public class ExonUtils {
      * @param data the data to be evaluated
      * @return
      */
-    public static final String determineType(Object data){
+    public static String determineType(Object data){
         final String name = data != null ? data.getClass().getSimpleName() : null;
         if(name == null)
             return SCHEMA_TYPE_NULL;
@@ -111,7 +113,7 @@ public class ExonUtils {
     public static boolean isBaseType(Object type){
         // Null is a base type
         if(type == null)
-            return true;
+            return false;
         Set<String> types = new HashSet<>();
         //If the proposed type is a string
         if(type instanceof String)
@@ -121,12 +123,10 @@ public class ExonUtils {
             types = (Set<String>) type;
 
         // If even one of the types is not a base type, return false
-        Iterator<String> iterator = types.iterator();
-        while(iterator.hasNext()) {
-            String t = iterator.next();
+        for(String t : types)
             if(!BASE_TYPES.contains(t))
                 return false;
-        }
+
         return true;
     }
 
@@ -136,7 +136,7 @@ public class ExonUtils {
      * @return the JSON-stringified version of the POJO
      * @throws JsonProcessingException
      */
-    public static final String serializeJsonPayload(Object object) throws JsonProcessingException {
+    public static String serializeJsonPayload(Object object) throws JsonProcessingException {
         return objectMapper.writeValueAsString(object);
     }
 
@@ -147,7 +147,7 @@ public class ExonUtils {
      * @return the deserialized object
      * @throws IOException
      */
-    public static final Object deserializeJsonPayload(File file) throws IOException {
+    public static Object deserializeJsonPayload(File file) throws IOException {
         return objectMapper.readValue(file,Object.class);
     }
 
@@ -158,7 +158,7 @@ public class ExonUtils {
      * @return the deserialized object
      * @throws IOException
      */
-    public static final Object deserializeJsonPayload(String json) throws IOException {
+    public static Object deserializeJsonPayload(String json) throws IOException {
         return objectMapper.readValue(json,Object.class);
     }
 
@@ -168,7 +168,7 @@ public class ExonUtils {
      * @return the content of the file
      * @throws IOException
      */
-    public static final String load(File file) throws IOException {
+    public static String load(File file) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(file));
         StringBuilder sb = new StringBuilder();
         String line;
@@ -184,7 +184,7 @@ public class ExonUtils {
      * @return a Schema object
      * @throws IOException
      */
-    public static final Schema deserializeSchema(String schemaString) throws IOException {
+    public static Schema deserializeSchema(String schemaString) throws IOException {
         return objectMapper.readValue(schemaString,Schema.class);
     }
 
@@ -194,7 +194,7 @@ public class ExonUtils {
      * @return a Schema object
      * @throws IOException
      */
-    public static final Schema deserializeSchema(File schema) throws IOException {
+    public static Schema deserializeSchema(File schema) throws IOException {
         return objectMapper.readValue(schema,Schema.class);
     }
 
@@ -226,8 +226,6 @@ public class ExonUtils {
     public static Property merge(Property prop1, Property prop2){
         // Create a new property that will hold the merged content
         final Property property = new Property(prop1.getId(),prop1.getType(),prop1.getDefaultValue());
-        // Collect all the keys from both properties
-        Iterator<String> iterator = Sets.union(prop1.getPropertiesKeys(),prop2.getPropertiesKeys()).iterator();
 
         /*
          * We will use this to collect every item that is not present in both properties so that we can compose
@@ -235,9 +233,8 @@ public class ExonUtils {
          */
         Set<String> removeFromRequired = new HashSet<>();
 
-        // Going through all property keys...
-        while(iterator.hasNext()){
-            String key = iterator.next();
+        // Going through all child-property keys from both properties...
+        for(String key : Sets.union(prop1.getPropertiesKeys(),prop2.getPropertiesKeys())){
             Property child1 = prop1.getProperty(key);
             Property child2 = prop2.getProperty(key);
             // key is present in prop2 but not prop1

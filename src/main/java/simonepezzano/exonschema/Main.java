@@ -32,7 +32,7 @@ public class Main {
 
         ExonWalker exonWalker = new ExonWalker();
         Schema schema = exonWalker.analyze(ExonUtils.deserializeJsonPayload(new File("samples/mixed_keys.json")),"the_id","the title");
-        System.out.println(ExonUtils.serializeJsonPayload(schema));
+        //System.out.println(ExonUtils.serializeJsonPayload(schema));
         System.out.println("------");
         ExonSimplifier exonSimplifier = new ExonSimplifier();
         System.out.println(ExonUtils.serializeJsonPayload(exonSimplifier.analyze(schema)));

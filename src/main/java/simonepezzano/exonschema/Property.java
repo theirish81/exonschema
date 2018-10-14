@@ -51,9 +51,6 @@ public class Property {
 
     private Property items;
 
-    @JsonIgnore
-    transient  Object _value;
-
     /**
      * Base constructor. It initializes the ID as the hashCode method relies on it.
      * Mostly used by deserializers
@@ -200,7 +197,7 @@ public class Property {
      */
     @JsonIgnore
     public boolean isSingleType(){
-        return type != null ?  type instanceof String : true;
+        return type == null || type instanceof String;
     }
 
     /**
@@ -263,10 +260,8 @@ public class Property {
                 if(this.hasProperties() && otherProp.hasProperties()){
                     // If the names of the child properties are the same...
                     if(this.getPropertiesKeys().equals(otherProp.getPropertiesKeys())){
-                        Iterator<String> iterator = this.getPropertiesKeys().iterator();
                         // For each property name...
-                        while(iterator.hasNext()){
-                            String key = iterator.next();
+                        for(final String key : this.getPropertiesKeys()){
                             /*
                              * If the child property from the current object and the proposed object are
                              * not similar, then we can pretty much accept the two objects are not similar
