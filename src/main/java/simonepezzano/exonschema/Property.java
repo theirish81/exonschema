@@ -254,9 +254,8 @@ public class Property {
             if(this.type == null && otherProp.type == null)
                 return true;
 
-            boolean eq = this.typeEquals(otherProp.type);
             //If types are equal or compatible...
-            if(eq){
+            if(this.typeEquals(otherProp.type)){
                 if(this.hasProperties() && otherProp.hasProperties()){
                     // If the names of the child properties are the same...
                     if(this.getPropertiesKeys().equals(otherProp.getPropertiesKeys())){
