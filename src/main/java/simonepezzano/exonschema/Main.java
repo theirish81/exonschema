@@ -21,6 +21,9 @@
 
 package simonepezzano.exonschema;
 
+import org.apache.commons.cli.*;
+import org.checkerframework.checker.nullness.Opt;
+
 import java.io.File;
 
 /**
@@ -29,12 +32,26 @@ import java.io.File;
 public class Main {
 
     public static void main(String[] args) throws Exception {
-
-        ExonWalker exonWalker = new ExonWalker();
-        Schema schema = exonWalker.analyze(ExonUtils.deserializeJsonPayload(new File("samples/mixed_keys.json")),"the_id","the title");
-        //System.out.println(ExonUtils.serializeJsonPayload(schema));
-        System.out.println("------");
-        ExonSimplifier exonSimplifier = new ExonSimplifier();
-        System.out.println(ExonUtils.serializeJsonPayload(exonSimplifier.analyze(schema)));
+        Options options = new Options();
+        options.addOption(Option.builder("f").desc("Input file").required().hasArg().build());
+        options.addOption(Option.builder("s").desc("Perform simplification").build());
+        options.addOption(Option.builder("r").desc("Similarity rate").hasArg().build());
+        CommandLineParser cmdParser = new DefaultParser();
+        try {
+            CommandLine commandLine = cmdParser.parse(options, args);
+            ExonWalker exonWalker = new ExonWalker();
+            File file = new File(commandLine.getOptionValue("f"));
+            Schema schema = exonWalker.analyze(ExonUtils.deserializeJsonPayload(file), file.getPath(), file.getName());
+            if(commandLine.hasOption("s")){
+                int rate = 3;
+                if(commandLine.hasOption("r"))
+                    rate = Integer.valueOf(commandLine.getOptionValue("r"));
+                ExonSimplifier exonSimplifier = new ExonSimplifier(rate);
+                schema = exonSimplifier.analyze(schema);
+            }
+            System.out.println(ExonUtils.serializeJsonPayload(schema));
+        }catch(ParseException e){
+            new HelpFormatter().printHelp("exonschema",options);
+        }
     }
 }
