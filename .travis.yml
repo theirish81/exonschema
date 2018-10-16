@@ -6,3 +6,15 @@ jdk:
 install: true
 
 script: mvn compile package install
+
+before_deploy:
+  - mvn help:evaluate -N -Dexpression=project.version|grep -v '\['
+  - export project_version=$(mvn help:evaluate -N -Dexpression=project.version|grep -v '\[')
+
+deploy:
+  provider: releases
+  api_key: "$GITHUB_OAUTH_TOKEN"
+  file: "target/exonschema-$project_version.jar"
+  skip_cleanup: true
+  on:
+    tags: true
