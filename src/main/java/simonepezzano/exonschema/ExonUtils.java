@@ -217,6 +217,13 @@ public class ExonUtils {
         return types;
     }
 
+    public static Set mergeExamples(Set examples1, Set examples2){
+        Set examples = new HashSet<>();
+        examples.addAll(examples1);
+        examples.addAll(examples2);
+        return examples;
+    }
+
     /**
      * Merges two properties
      * @param prop1 property to merge
@@ -250,13 +257,24 @@ public class ExonUtils {
                     removeFromRequired.add(key);
                 } else
                     // If the two children are basically the same. We pick one.
-                    if(child1.equivalentTo(child2))
-                        property.addChildProperty(key,child1);
+                    if(child1.equivalentTo(child2)) {
+                        /*
+                         * Merging examples like this alters the original object
+                         * TODO: fix this mess and properly clone objects
+                         */
+                        child1.setExamples(mergeExamples(child1.getExamples(),child2.getExamples()));
+                        property.addChildProperty(key, child1);
+                    }
                     else {
                         // If the two children are made of base types, we can merge them
                         if(ExonUtils.isBaseType(child1.getType()) && ExonUtils.isBaseType(child2.getType()) && !child1.typeEquals(child2.getType())){
+                            /*
+                             * Merging types like this alters the original object
+                             * TODO: fix this mess and properly clone objects
+                             */
                             Set<String> newType = ExonUtils.mergeTypes(child1.getType(),child2.getType());
                             child1.setType(newType);
+                            child1.setExamples(ExonUtils.mergeExamples(child1.getExamples(),child2.getExamples()));
                             property.addChildProperty(key,child1);
                         }else {
                             // The two children represent different scenarios, then we do an anyOf
@@ -272,6 +290,9 @@ public class ExonUtils {
         // Composing the required field
         property.setRequired(Sets.newHashSet(property.getPropertiesKeys()));
         property.getRequired().removeAll(removeFromRequired);
+        if(!prop1.getType().equals(prop2.getType()))
+            property.setType(ExonUtils.mergeTypes(prop1.getType(),prop2.getType()));
+        property.setExamples(ExonUtils.mergeExamples(prop1.getExamples(),prop2.getExamples()));
         return property;
     }
 

@@ -69,6 +69,8 @@ public class Property {
         this.id = id;
         this.type = type;
         this.defaultValue = defaultValue;
+        setExamples(new HashSet<>());
+        getExamples().add(this.defaultValue);
     }
 
     public void setId(String id){
@@ -149,7 +151,9 @@ public class Property {
     }
 
     public Property getProperty(String key){
-        return getProperties().get(key);
+        if(hasProperties())
+            return getProperties().get(key);
+        return null;
     }
 
     /**

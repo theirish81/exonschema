@@ -22,7 +22,6 @@
 package simonepezzano.exonschema;
 
 import org.apache.commons.cli.*;
-import org.checkerframework.checker.nullness.Opt;
 
 import java.io.File;
 
