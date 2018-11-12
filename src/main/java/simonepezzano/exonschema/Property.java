@@ -305,6 +305,8 @@ public class Property implements Cloneable {
     public Schema asSchema(String title){
         Schema schema = new Schema(id,title,getTypeAsString());
         schema.setProperties(properties);
+        schema.setItems(items);
+        schema.setRequired(required);
         return schema;
     }
 
