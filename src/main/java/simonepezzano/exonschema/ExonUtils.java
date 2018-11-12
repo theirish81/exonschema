@@ -219,13 +219,17 @@ public class ExonUtils {
 
     public static Set mergeExamples(Set examples1, Set examples2){
         Set examples = new HashSet<>();
-        examples.addAll(examples1);
-        examples.addAll(examples2);
+        if(examples1 != null)
+            examples.addAll(examples1);
+        if(examples2 != null)
+            examples.addAll(examples2);
         return examples;
     }
 
     /**
-     * Merges two properties
+     * Merges two properties. Beware! This function will merge the attributes and properties of two Property
+     * instances in a non-recursive fashion. It will also ignore the "items" sub-property, so array definitions
+     * will not be merged
      * @param prop1 property to merge
      * @param prop2 property to merge
      * @return the merged property
