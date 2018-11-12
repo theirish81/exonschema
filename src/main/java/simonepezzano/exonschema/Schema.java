@@ -87,7 +87,7 @@ public class Schema extends Property {
     }
 
     public Schema clone(){
-        return (Schema) super.clone();
+        return  super.clone().asSchema("schema");
     }
 
 }
