@@ -231,6 +231,9 @@ public class ExonUtils {
      * @return the merged property
      */
     public static Property merge(Property prop1, Property prop2){
+        prop1 = prop1.clone();
+        prop2 = prop2.clone();
+
         // Create a new property that will hold the merged content
         final Property property = new Property(prop1.getId(),prop1.getType(),prop1.getDefaultValue());
 
@@ -258,20 +261,12 @@ public class ExonUtils {
                 } else
                     // If the two children are basically the same. We pick one.
                     if(child1.equivalentTo(child2)) {
-                        /*
-                         * Merging examples like this alters the original object
-                         * TODO: fix this mess and properly clone objects
-                         */
                         child1.setExamples(mergeExamples(child1.getExamples(),child2.getExamples()));
                         property.addChildProperty(key, child1);
                     }
                     else {
                         // If the two children are made of base types, we can merge them
                         if(ExonUtils.isBaseType(child1.getType()) && ExonUtils.isBaseType(child2.getType()) && !child1.typeEquals(child2.getType())){
-                            /*
-                             * Merging types like this alters the original object
-                             * TODO: fix this mess and properly clone objects
-                             */
                             Set<String> newType = ExonUtils.mergeTypes(child1.getType(),child2.getType());
                             child1.setType(newType);
                             child1.setExamples(ExonUtils.mergeExamples(child1.getExamples(),child2.getExamples()));

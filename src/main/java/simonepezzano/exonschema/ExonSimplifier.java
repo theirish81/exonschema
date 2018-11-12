@@ -62,7 +62,7 @@ public class ExonSimplifier {
      * @return the (hopefully) simplified schema
      */
     public Schema analyze(Schema schema){
-        analyzeProperty(schema);
+        analyzeProperty(schema.clone());
         return schema;
     }
 

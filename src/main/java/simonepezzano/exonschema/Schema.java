@@ -86,4 +86,8 @@ public class Schema extends Property {
         return schema;
     }
 
+    public Schema clone(){
+        return (Schema) super.clone();
+    }
+
 }

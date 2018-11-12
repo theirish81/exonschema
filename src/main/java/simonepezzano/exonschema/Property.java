@@ -32,7 +32,7 @@ import java.util.*;
  * The JsonSchema property
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Property {
+public class Property implements Cloneable {
 
     @JsonProperty("$id")
     private String id;
@@ -70,7 +70,8 @@ public class Property {
         this.type = type;
         this.defaultValue = defaultValue;
         setExamples(new HashSet<>());
-        getExamples().add(this.defaultValue);
+        if( this.defaultValue != null )
+            getExamples().add(this.defaultValue);
     }
 
     public void setId(String id){
@@ -305,6 +306,15 @@ public class Property {
         Schema schema = new Schema(id,title,getTypeAsString());
         schema.setProperties(properties);
         return schema;
+    }
+
+    public Property clone(){
+        Property property = new Property(this.id,this.type,this.defaultValue);
+        if(items != null)
+            property.items = this.items.clone();
+        if(properties != null)
+            properties.entrySet().forEach( entry -> property.addChildProperty(entry.getKey(),entry.getValue().clone()));
+        return property;
     }
 
 }
